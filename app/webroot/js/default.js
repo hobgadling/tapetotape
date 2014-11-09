@@ -10,4 +10,15 @@ $(document).ready(function(){
 			});
 			$('#' + ev.date.getFullYear() + '-' + pad(ev.date.getMonth()+1) + '-' + pad(ev.date.getDate())).removeClass('hidden');
 		});
+		
+	$('.uploadform').click(function(){
+		$('.teamname').eq(0).text($(this).parents('.game_selector').children('span').eq(0).text());
+		$('.teamname').eq(1).text($(this).parents('.game_selector').children('span').eq(1).text());
+		
+		$('.fileupload').eq(0).attr({name: $(this).parents('.game_selector').children('span').eq(0).attr('class')});
+		$('.fileupload').eq(1).attr({name: $(this).parents('.game_selector').children('span').eq(1).attr('class')});
+		
+		$('#game_id').val($(this).attr('id'));
+		$('#uploadform').removeClass('hidden');
+	});
 });

@@ -409,7 +409,7 @@ class CronController extends AppController{
 									'home_team_id' => $home_team['Team']['id']
 								)
 							);
-							
+							print_r($game);
 							$this->Game->saveAll($game,array('deep' => true));
 						} else if(substr($game->find('.skedLinks a')[0]->plaintext,0,5) == 'TICKE'){
 							$date = date('Y-m-d H:i:s',strtotime($game->find('.date')[0]->first_child()->plaintext . ' ' . substr($game->find('.time .skedStartTimeEST')[0]->plaintext,0,-3)));
@@ -434,7 +434,7 @@ class CronController extends AppController{
 									'home_team_id' => $home_team['Team']['id']
 								)
 							);
-							
+							print_r($game);
 							$this->Game->saveAll($game,array('deep' => true));
 						}
 					}
