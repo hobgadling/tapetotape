@@ -4,6 +4,20 @@ error_reporting(E_ALL);
 class CronController extends AppController{
 	public $uses = array('Season','Game','Team','Player','Shift','Shot','Faceoff','Goal','Block','Shot','Assist');
 	
+	public function getCleanData($season_id){
+		set_time_limit(1000000000);
+		$this->importSeason($season_id);
+		$games = $this->Game->find('all',array('conditions' => array(
+			'Game.nhl_id >' => 0
+		)));
+		foreach($games as $game){
+			$this->getRosterData($season_id,$game['Game']['nhl_id']);
+			$this->getTOIData($season_id,$game['Game']['nhl_id']);
+			$this->getPBPData($season_id,$game['Game']['nhl_id']);
+			
+		}
+	}
+	
 	public function getRosterData($season_id,$nhl_game_id){
 		include_once '../Vendor/simple_html_dom.php';
 		
@@ -160,7 +174,6 @@ class CronController extends AppController{
 				}
 			}
 		}
-		die('finished');
 	}
 	
 	public function getPBPData($season_id,$nhl_game_id){
@@ -222,10 +235,15 @@ class CronController extends AppController{
 							$number = substr($token, 1);
 							$pbp_team_short = $desc_tokens[$id-1];
 							$lname = str_replace(',','',strtolower($desc_tokens[$id+1]));
-							$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+							$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+							$player = $this->Game->Player->find('first',array('conditions' => array(
 								'Player.number' => $number,
-								'Team.pbp_short_name' => $pbp_team_short
-							)));
+								'Player.team_id' => $team['Team']['id']
+							),
+								'contain' => array('Game' => array(
+									'Game.id' => $game['Game']['id']
+								)),
+							));
 							if($pbp_team_short == $winning_team_short){
 								$win_id = $player['Player']['id'];
 							} else {
@@ -249,10 +267,15 @@ class CronController extends AppController{
 					$number = substr($desc_tokens[1], 1);
 					$pbp_team_short = $desc_tokens[0];
 					$lname = str_replace(',','',strtolower($desc_tokens[2]));
-					$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+					$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+					$player = $this->Game->Player->find('first',array('conditions' => array(
 						'Player.number' => $number,
-						'Team.pbp_short_name' => $pbp_team_short
-					)));
+						'Player.team_id' => $team['Team']['id']
+					),
+						'contain' => array('Game' => array(
+							'Game.id' => $game['Game']['id']
+						)),
+					));
 					$shot = array(
 						'Game' => array('id' => $game['Game']['id']),
 						'Player' => array('id' => $player['Player']['id']),
@@ -267,10 +290,28 @@ class CronController extends AppController{
 					$number = substr($desc_tokens[7], 1);
 					$pbp_team_short = $desc_tokens[6];
 					$lname = str_replace(',','',strtolower($desc_tokens[8]));
-					$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+					$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+					$player = $this->Game->Player->find('first',array('conditions' => array(
 						'Player.number' => $number,
-						'Team.pbp_short_name' => $pbp_team_short
-					)));
+						'Player.team_id' => $team['Team']['id']
+					),
+						'contain' => array('Game' => array(
+							'Game.id' => $game['Game']['id']
+						)),
+					));
+					if(!$player){
+						$number = substr($desc_tokens[8], 1);
+						$pbp_team_short = $desc_tokens[7];
+						$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+						$player = $this->Game->Player->find('first',array('conditions' => array(
+							'Player.number' => $number,
+							'Player.team_id' => $team['Team']['id']
+						),
+							'contain' => array('Game' => array(
+								'Game.id' => $game['Game']['id']
+							)),
+						));
+					}
 					$block = array(
 						'Player' => array('id' => $player['Player']['id']),
 						'Shot' => array('id' => $this->Shot->id)
@@ -283,10 +324,15 @@ class CronController extends AppController{
 							$number = substr($token, 1);
 							$pbp_team_short = $desc_tokens[0];
 							$lname = str_replace(',','',strtolower($desc_tokens[$id+1]));
-							$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+							$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+							$player = $this->Game->Player->find('first',array('conditions' => array(
 								'Player.number' => $number,
-								'Team.pbp_short_name' => $pbp_team_short
-							)));
+								'Player.team_id' => $team['Team']['id']
+							),
+								'contain' => array('Game' => array(
+									'Game.id' => $game['Game']['id']
+								)),
+							));
 						}
 					}
 					$shot = array(
@@ -306,10 +352,15 @@ class CronController extends AppController{
 							$number = substr($token, 1);
 							$pbp_team_short = $desc_tokens[0];
 							$lname = str_replace(',','',strtolower($desc_tokens[$id+1]));
-							$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+							$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+							$player = $this->Game->Player->find('first',array('conditions' => array(
 								'Player.number' => $number,
-								'Team.pbp_short_name' => $pbp_team_short
-							)));
+								'Player.team_id' => $team['Team']['id']
+							),
+								'contain' => array('Game' => array(
+									'Game.id' => $game['Game']['id']
+								)),
+							));
 						}
 					}
 					$shot = array(
@@ -327,10 +378,15 @@ class CronController extends AppController{
 					$number = substr($desc_tokens[1], 1);
 					$pbp_team_short = $desc_tokens[0];
 					$lname = preg_replace("/[^A-Za-z]+/", "",strtolower($desc_tokens[2]));
-					$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+					$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+					$player = $this->Game->Player->find('first',array('conditions' => array(
 						'Player.number' => $number,
-						'Team.pbp_short_name' => $pbp_team_short
-					)));
+						'Player.team_id' => $team['Team']['id']
+					),
+						'contain' => array('Game' => array(
+							'Game.id' => $game['Game']['id']
+						)),
+					));
 					$shot = array(
 						'Game' => array('id' => $game['Game']['id']),
 						'Player' => array('id' => $player['Player']['id']),
@@ -358,10 +414,15 @@ class CronController extends AppController{
 							$number = substr($token, 1);
 							$pbp_team_short = $desc_tokens[0];
 							$lname = preg_replace("/[^A-Za-z]+/", "",strtolower($desc_tokens[$id+1]));
-							$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+							$team = $this->Team->find('first',array('conditions' => array('Team.pbp_short_name' => $pbp_team_short)));
+							$player = $this->Game->Player->find('first',array('conditions' => array(
 								'Player.number' => $number,
-								'Team.pbp_short_name' => $pbp_team_short
-							)));
+								'Player.team_id' => $team['Team']['id']
+							),
+								'contain' => array('Game' => array(
+									'Game.id' => $game['Game']['id']
+								)),
+							));
 							$assist = array(
 								'Player' => array('id' => $player['Player']['id']),
 								'Goal' => array('id' => $goal_id)
@@ -372,7 +433,6 @@ class CronController extends AppController{
 					break;
 			}
 		}
-		die('finished');
 	}
 	
 	public function importSeason($season_id){
@@ -409,7 +469,7 @@ class CronController extends AppController{
 									'home_team_id' => $home_team['Team']['id']
 								)
 							);
-							print_r($game);
+							print_r($game['Game']['nhl_id']);
 							$this->Game->saveAll($game,array('deep' => true));
 						} else if(substr($game->find('.skedLinks a')[0]->plaintext,0,5) == 'TICKE'){
 							$date = date('Y-m-d H:i:s',strtotime($game->find('.date')[0]->first_child()->plaintext . ' ' . substr($game->find('.time .skedStartTimeEST')[0]->plaintext,0,-3)));
@@ -434,7 +494,7 @@ class CronController extends AppController{
 									'home_team_id' => $home_team['Team']['id']
 								)
 							);
-							print_r($game);
+							print_r($game['Game']['home_team_id']);
 							$this->Game->saveAll($game,array('deep' => true));
 						}
 					}

@@ -5,3 +5,10 @@ app/tmp/*
 app/[Cc]onfig/core.php
 app/[Cc]onfig/database.php
 !empty
+.DS_Store
+*.svn-base
+app/webroot/js/jquery.tablesorter/themes/green/.svn
+app/webroot/js/jquery.tablesorter/themes/.svn
+app/webroot/js/jquery.tablesorter/tests/assets/.svn
+app/webroot/js/jquery.tablesorter/tests
+app/webroot/js/jquery.tablesorter/docs
