@@ -37,16 +37,22 @@ class UploadController extends AppController{
 							$game_seconds = ((intval($shot['A']) - 1) * (20*60)) + $seconds;
 							
 							$player_number = $shot['C'];
-							$player = $this->Game->Team->Player->find('first',array('conditions' => array(
+							$player = $this->Game->Player->find('first',array('conditions' => array(
 								'Player.number' => $player_number,
-								'Team.id' => $team_id
-							)));
-							$nhl_shot = $this->Game->Player->Shot->find('first',array('conditions' => array(
-								'Player.id' => $player['Player']['id'],
+								'Player.team_id' => $team_id
+							),
+								'contain' => array('Game' => array(
+									'Game.id' => $_POST['game_id']
+								)),
+							));
+							$nhl_shot = $this->Game->Shot->find('first',array('conditions' => array(
+								'Shot.player_id' => $player['Player']['id'],
+								'Game.id' => $_POST['game_id'],
 								'AND' => array(
 									'Shot.time >=' => $game_seconds - 10,
 									'Shot.time <=' => $game_seconds + 10
-								)
+								),
+								
 							)));
 							if(!$nhl_shot){
 								$nhl_shot = $this->Game->Player->Shot->find('first',array('conditions' => array(
@@ -58,10 +64,14 @@ class UploadController extends AppController{
 								)));
 							}
 							$shot_id = $nhl_shot['Shot']['id'];
-							$primary_player = $this->Game->Team->Player->find('first', array('conditions' => array(
+							$primary_player = $this->Game->Player->find('first',array('conditions' => array(
 								'Player.number' => $shot['D'],
-								'Team.id' => $team_id
-							)));
+								'Player.team_id' => $team_id
+							),
+								'contain' => array('Game' => array(
+									'Game.id' => $_POST['game_id']
+								)),
+							));
 							$type = ($shot['I'] == 'Y' ? 'SG' : 'SAG');
 							if($shot['H'] == 'Y'){
 								$location = 'SC';
@@ -83,10 +93,14 @@ class UploadController extends AppController{
 							);
 							$this->Pass->saveAssociated($primary_pass);
 							if(intval($shot['E']) != 0){
-								$secondary_player = $this->Game->Team->Player->find('first', array('conditions' => array(
+								$secondary_player = $this->Game->Player->find('first',array('conditions' => array(
 									'Player.number' => $shot['E'],
-									'Team.id' => $team_id
-								)));
+									'Player.team_id' => $team_id
+								),
+									'contain' => array('Game' => array(
+										'Game.id' => $_POST['game_id']
+									)),
+								));
 								$type = ($shot['I'] == 'Y' ? 'SG' : 'SAG');
 								if($shot['H'] == 'Y'){
 									$location = 'SC';

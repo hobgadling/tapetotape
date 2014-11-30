@@ -3,6 +3,8 @@ function pad(n){
 }
 
 $(document).ready(function(){
+	$('table').tablesorter();
+	
 	$('.datepicker').datepicker()
 		.on('changeDate',function(ev){
 			$('.game_list').each(function(){
@@ -11,6 +13,8 @@ $(document).ready(function(){
 			$('#' + ev.date.getFullYear() + '-' + pad(ev.date.getMonth()+1) + '-' + pad(ev.date.getDate())).removeClass('hidden');
 		});
 		
+	$('.datepicker').click();
+	
 	$('.uploadform').click(function(){
 		$('.teamname').eq(0).text($(this).parents('.game_selector').children('span').eq(0).text());
 		$('.teamname').eq(1).text($(this).parents('.game_selector').children('span').eq(1).text());
@@ -21,4 +25,6 @@ $(document).ready(function(){
 		$('#game_id').val($(this).attr('id'));
 		$('#uploadform').removeClass('hidden');
 	});
+	
+	
 });

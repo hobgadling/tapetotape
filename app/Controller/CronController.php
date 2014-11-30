@@ -4,18 +4,88 @@ error_reporting(E_ALL);
 class CronController extends AppController{
 	public $uses = array('Season','Game','Team','Player','Shift','Shot','Faceoff','Goal','Block','Shot','Assist');
 	
-	public function getCleanData($season_id){
+	public function getCleanGamesData($season_id){
 		set_time_limit(1000000000);
 		$this->importSeason($season_id);
 		$games = $this->Game->find('all',array('conditions' => array(
 			'Game.nhl_id >' => 0
 		)));
 		foreach($games as $game){
-			$this->getRosterData($season_id,$game['Game']['nhl_id']);
-			$this->getTOIData($season_id,$game['Game']['nhl_id']);
-			$this->getPBPData($season_id,$game['Game']['nhl_id']);
-			
+			$this->getFiles($season_id,$game['Game']['id']);
 		}
+	}
+	
+	public function getAllFiles($season_id){
+		$games = $this->Game->find('all',array('conditions' => array(
+			'Game.nhl_id >' => 0
+		)));
+		foreach($games as $game){
+			$this->getFiles($season_id,$game['Game']['id']);
+		}
+	}
+	
+	public function getFiles($season_id,$nhl_game_id){
+		if(!file_exists('../webroot/game_sheets/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM')){
+			$roster_string = file_get_contents('http://www.nhl.com/scores/htmlreports/' . $season_id . '/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+			$fp = fopen('../webroot/game_sheets/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM','w');
+			fwrite($fp, $roster_string);
+			fclose($fp);
+		}
+		
+		if(!file_exists('../webroot/game_sheets/TH02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM')){
+			$toi_home_string = file_get_contents('http://www.nhl.com/scores/htmlreports/' . $season_id . '/TH02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+			$fp = fopen('../webroot/game_sheets/TH02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM','w');
+			fwrite($fp, $toi_home_string);
+			fclose($fp);
+		}
+		
+		if(!file_exists('../webroot/game_sheets/TV02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM')){
+			$toi_away_string = file_get_contents('http://www.nhl.com/scores/htmlreports/' . $season_id . '/TV02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+			$fp = fopen('../webroot/game_sheets/TV02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM','w');
+			fwrite($fp, $toi_away_string);
+			fclose($fp);
+		}
+		
+		if(!file_exists('../webroot/game_sheets/PL02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM')){
+			$pbp_string = file_get_contents('http://www.nhl.com/scores/htmlreports/' . $season_id . '/PL02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+			$fp = fopen('../webroot/game_sheets/PL02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM','w');
+			fwrite($fp, $pbp_string);
+			fclose($fp);
+		}
+	}
+	
+	public function getCleanData($season_id){
+		header('Content-Type: text/html');
+		set_time_limit(0);
+		$games = $this->Game->find('all',array('conditions' => array(
+			'Game.nhl_id >' => 0,
+			'Game.nhl_complete' => 0
+		)));
+		foreach($games as $game){
+			print_r($game);
+			$this->getGameData($season_id,$game['Game']['id']);
+		}
+	}
+	
+	public function getGameData($season_id,$nhl_game_id){
+		$this->getFiles($season_id,$nhl_game_id);
+		$this->getRosterData($season_id,$nhl_game_id);
+		$this->getTOIData($season_id,$nhl_game_id);
+		$this->getPBPData($season_id,$nhl_game_id);
+		$season = $this->Season->find('first',
+			array('conditions'=>
+				array(
+					'start_year' => substr($season_id,0,4),
+					'end_year' => substr($season_id,4)
+				)
+			)
+		);
+		$game = $this->Game->find('first',array('conditions' => array(
+			'season_id' => $season['Season']['id'],
+			'nhl_id' => $nhl_game_id
+		)));
+		$game['Game']['nhl_complete'] = 1;
+		$this->Game->save($game);
 	}
 	
 	public function getRosterData($season_id,$nhl_game_id){
@@ -40,7 +110,7 @@ class CronController extends AppController{
 			$this->Season->save();
 			$season = $this->Season->read(null,$this->Season->id);
 		}
-		$roster_html = file_get_html('http://www.nhl.com/scores/htmlreports/' . $season_id . '/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+		$roster_html = file_get_html('../webroot/game_sheets/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
 		$game = $this->Game->find('first',array('conditions' => array(
 			'season_id' => $season['Season']['id'],
 			'nhl_id' => $nhl_game_id
@@ -84,19 +154,19 @@ class CronController extends AppController{
 							'Game' => array('id' => $game['Game']['id'])
 						);
 						$this->Player->saveAssociated($player);
-						$this->Team->saveAssociated($game);
+						//$this->Team->saveAssociated($game);
 					} else {
 						$player = array(
+							'Team' => array('id' => $data['Team'][$team_index]['id']),
 							'Game' => array('id' => $game['Game']['id']),
-							'Player' => array('id' => $player['Player']['id']),
-							'Team' => array('id' => $data['Team'][$team_index]['id'])
+							'Player' => array('id' => $player['Player']['id'])
 						);
 						$game = array(
 							'Team' => array('id' => $data['Team'][$team_index]['id']),
 							'Game' => array('id' => $game['Game']['id'])
 						);
 						$this->Player->saveAssociated($player);
-						$this->Team->saveAssociated($game);
+						//$this->Team->saveAssociated($game);
 					}
 				}
 				$team_index++;
@@ -108,8 +178,8 @@ class CronController extends AppController{
 	public function getTOIData($season_id,$nhl_game_id){
 		include_once '../Vendor/simple_html_dom.php';
 		
-		$toi_home_html = file_get_html('http://www.nhl.com/scores/htmlreports/' . $season_id . '/TH02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
-		$toi_away_html = file_get_html('http://www.nhl.com/scores/htmlreports/' . $season_id . '/TV02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+		$toi_home_html = file_get_html('../webroot/game_sheets/TH02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+		$toi_away_html = file_get_html('../webroot/game_sheets/TV02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
 		
 		$game = $this->Game->find('first',array('conditions' => array('Game.nhl_id' => $nhl_game_id)));
 		
@@ -179,7 +249,7 @@ class CronController extends AppController{
 	public function getPBPData($season_id,$nhl_game_id){
 		include_once '../Vendor/simple_html_dom.php';
 		
-		$pbp_html = file_get_html('http://www.nhl.com/scores/htmlreports/' . $season_id . '/PL02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
+		$pbp_html = file_get_html('../webroot/game_sheets/PL02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
 		
 		$game = $this->Game->find('first',array('conditions' => array('Game.nhl_id' => $nhl_game_id)));
 		
