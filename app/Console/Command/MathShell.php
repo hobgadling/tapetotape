@@ -1,5 +1,5 @@
 <?php
-class MathController extends AppController{
+class MathShell extends AppShell{
 	public $uses = array('Season','Game','Team','Player','Shift','Shot','Faceoff','Goal','Block','Shot','Assist','TeamStat','TeamGameStat','PlayerStat','PlayerGameStat');
 	
 	public function createTeamRecords(){
@@ -994,7 +994,8 @@ class MathController extends AppController{
 		$this->PlayerGameStat->save($stats);
 	}
 	
-	public function getFullGameStats($game_id){
+	public function getFullGameStats(){
+		$game_id = $this->args[0];
 		$situations = array('All','5v5','5v4','4v4','5v3','4v3','3v3');
 		$game = $this->Game->find('first',array('conditions' => array('Game.id' => $game_id)));
 		foreach($situations as $situation){
@@ -1008,6 +1009,13 @@ class MathController extends AppController{
 					$this->getPlayerGameBySituation($game_id,$player['id'],$situation,$i);
 				}
 			}
+		}
+	}
+	
+	public function main(){
+		$games = $this->Game->find('all',array('conditions' => array('Game.nhl_id >' => 0)));
+		foreach($games as $game){
+			$this->getFullGameStats($game['Game']['id']);
 		}
 	}
 	

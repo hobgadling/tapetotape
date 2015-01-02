@@ -55,13 +55,13 @@ class UploadController extends AppController{
 								
 							)));
 							if(!$nhl_shot){
-								$nhl_shot = $this->Game->Player->Shot->find('first',array('conditions' => array(
-									'Player.id' => $player['Player']['id'],
-									'AND' => array(
-										'Shot.time >=' => $game_seconds - 60,
-										'Shot.time <=' => $game_seconds + 60
-									)
-								)));
+								$s = array(
+									'player_id' => $player['Player']['id'],
+									'game_id' => $_POST['game_id'],
+									'time' => $game_seconds
+								);
+								$this->Shot->save(array('Shot' => $s));
+								$nhl_shot = $this->Shot->find('first',array('conditions' => array('Shot.id' => $this->Shot->id)));
 							}
 							$shot_id = $nhl_shot['Shot']['id'];
 							$primary_player = $this->Game->Player->find('first',array('conditions' => array(

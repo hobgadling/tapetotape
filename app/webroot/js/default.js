@@ -26,5 +26,34 @@ $(document).ready(function(){
 		$('#uploadform').removeClass('hidden');
 	});
 	
+	$('.one_pass,.two_pass').hover(
+		function(){
+			$(this).children('.pass,.shot').show();
+		},
+		function(){
+			$(this).children('.pass,.shot').hide();
+		}
+	);
 	
+	$('#sc').click(function(){
+		if($('input:checked').length > 0){
+			$('.situation').each(function(){
+				h = $(this).attr('href');
+				if(h.charAt(h.length - 1) == 0){
+					$(this).attr({href: h.substr(0,h.length - 1) + '1'});
+				} else {
+					$(this).attr({href: h + '/1'});
+				}
+			});
+		} else {
+			$('.situation').each(function(){
+				h = $(this).attr('href');
+				if(h.charAt(h.length - 1) == 1){
+					$(this).attr({href: h.substr(0,h.length - 1) + '0'});
+				} else {
+					$(this).attr({href: h + '/0'});
+				}
+			});
+		}
+	});
 });

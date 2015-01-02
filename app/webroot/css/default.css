@@ -1,3 +1,106 @@
+body{
+	padding-top: 70px;
+}
+
+.clear{
+	clear: both;
+	height: 0px !important;
+}
+
 th{
 	text-transform: uppercase;
+}
+
+#shot_table{
+	width: 100%;
+	min-height: 773px;
+	background-image: url(/img/rink.png);
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+}
+
+.one_pass,.two_pass{
+	opacity: 0.8;
+	margin: 10px 0px;
+	clear: both;
+	text-align: center;
+	position: relative;
+}
+
+.long{
+	width: 87%;
+	margin: 10px auto;
+}
+
+.med{
+	width: 30%;
+	float: right;
+	margin-right: 6.5%;
+}
+
+.short{
+	width: 8%;
+	float: right;
+	margin-right: 6.5%;
+}
+
+.pass,.shot{
+	display: none;
+	position: absolute;
+	top: -20px;
+	opacity: 1;
+	padding: 5px;
+	font-size: 12px;
+	text-shadow: 1px 1px 0px black;
+	color: #fff;
+}
+
+.pass a,.shot a{
+	color: #fff;
+}
+
+.pass{
+	left: 0px;
+}
+
+.one_pass.short .pass{
+	left: -80px;
+}
+
+.two_pass .pass:not(:first-child).dnz{
+	left: 200px;
+}
+
+.two_pass .pass:not(:first-child).oz{
+	right: 150px;
+	left: auto;
+}
+
+.two_pass .pass:first-child.sc{
+	right: 170px;
+	left: auto;
+}
+
+.two_pass .pass:not(:first-child).sc{
+	right: 100px;
+	left: auto;
+}
+
+.shot{
+	right: 0px;
+	top: -40px;
+}
+
+.one_pass.short .shot{
+	right: -40px;
+}
+
+.two_pass .shot{
+	right: -40px;
+}
+
+.time{
+	color: #fff;
+	font-size: 12px;
+	text-shadow: 1px 1px 0px black;
 }

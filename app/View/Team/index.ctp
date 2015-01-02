@@ -4,6 +4,11 @@ Recently Completed Games:<br />
 	<?php echo date('n/j/Y h:i',strtotime($game['Game']['event_date']));?> - <?php echo $game['Team'][0]['team_name']?> vs <?php echo $game['Team'][1]['team_name']?><br />
 </a>
 <?php }?>
+<br /><br />
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vitae purus luctus, condimentum dui quis, faucibus nisl. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec feugiat arcu sed nulla tincidunt viverra. In id fringilla lectus. Vivamus ultricies, leo id pellentesque euismod, tellus lectus finibus libero, nec viverra ante tellus eget lorem. Nam in dapibus quam. Aenean pretium mollis molestie. Duis aliquet eleifend sapien.<br /><br />
+
+Vestibulum justo nibh, dictum quis ipsum a, dapibus suscipit felis. In tristique vitae tortor nec efficitur. Curabitur cursus porta porttitor. Cras eget orci leo. Nam ut laoreet erat. Morbi euismod auctor maximus. Etiam ultricies, risus ac dignissim varius, odio sem lacinia sem, id consectetur justo elit vitae augue. In hac habitasse platea dictumst. Fusce blandit eros ac tempor dapibus. Maecenas tincidunt mollis odio vitae condimentum.<br /><br />
+
 <table width="100%" id="teams_table" class="table table-striped tablesorter" border="0" cellpadding="0" cellspacing="1">
 	<thead>
 	<tr>
