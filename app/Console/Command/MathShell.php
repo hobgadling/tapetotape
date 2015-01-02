@@ -88,6 +88,19 @@ class MathShell extends AppShell{
 		}
 	}
 	
+	public function getSituation($game_id,$time){
+		$game = $this->Game->find('first',array('conditions' => array('Game.id' => $game_id)));
+		$time_diff = 9999;
+		foreach($game['Shot'] as $shot){
+			if(abs($shot['time'] - $time) < $time_diff){
+				$time_diff = abs($shot['time'] - $time);
+				$situation = $shot['situation'];
+			}
+		}
+		
+		return $situation;
+	}
+	
 	public function onIce($player_id,$game_id,$time){
 		$shift = $this->Shift->find('first',array('conditions' => array(
 			'Shift.player_id' => $player_id,
@@ -126,6 +139,10 @@ class MathShell extends AppShell{
 		$oz_sg = 0;
 		$sc_sg = 0;
 		$sg = 0;
+		
+		$sagf = 0;
+		$saga = 0;
+		$sagf_p = 0;
 		
 		foreach($game['Shot'] as $shot){
 			if($close == 0 || $this->isClose($shot['game_id'],$shot['time'])){
@@ -182,63 +199,99 @@ class MathShell extends AppShell{
 		if($situation == 'All' || $situation == '5v5'){
 			foreach($game['Pass'] as $pass){
 				if($close == 0 || $this->isClose($pass['Shot']['game_id'],$pass['Shot']['time'])){
-					switch($pass['location']){
-						case 'D/NZ':
-							if($pass['type'] == 'SG'){
-								if($pass['order'] == 'A'){
-									$dnz_sg++;
-									$sg++;
+					if($pass['Player']['team_id'] == $team_id){
+						switch($pass['location']){
+							case 'D/NZ':
+								if($pass['type'] == 'SG'){
+									if($pass['order'] == 'A'){
+										$dnz_sg++;
+										$sg++;
+									} else {
+										$dnz_a2sg++;
+										$a2sg++;
+									}
 								} else {
-									$dnz_a2sg++;
-									$a2sg++;
+									if($pass['order'] == 'A'){
+										$dnz_sag++;
+										$sag++;
+										$sagf++;
+									} else {
+										$dnz_a2sag++;
+										$a2sag++;
+									}
 								}
-							} else {
-								if($pass['order'] == 'A'){
-									$dnz_sag++;
-									$sag++;
+								break;
+							case 'OZ':
+								if($pass['type'] == 'SG'){
+									if($pass['order'] == 'A'){
+										$oz_sg++;
+										$sg++;
+									} else {
+										$oz_a2sg++;
+										$a2sg++;
+									}
 								} else {
-									$dnz_a2sag++;
-									$a2sag++;
+									if($pass['order'] == 'A'){
+										$oz_sag++;
+										$sag++;
+										$sagf++;
+									} else {
+										$oz_a2sag++;
+										$a2sag++;
+									}
 								}
-							}
-							break;
-						case 'OZ':
-							if($pass['type'] == 'SG'){
-								if($pass['order'] == 'A'){
-									$oz_sg++;
-									$sg++;
+								break;
+							case 'SC':
+								if($pass['type'] == 'SG'){
+									if($pass['order'] == 'A'){
+										$sc_sg++;
+										$sg++;
+									} else {
+										$a2sg++;
+									}
 								} else {
-									$oz_a2sg++;
-									$a2sg++;
+									if($pass['order'] == 'A'){
+										$sc_sag++;
+										$sag++;
+										$sagf++;
+									} else {
+										$a2sag++;
+									}
 								}
-							} else {
-								if($pass['order'] == 'A'){
-									$oz_sag++;
-									$sag++;
+								break;
+						}
+					} else {
+						switch($pass['location']){
+							case 'D/NZ':
+								if($pass['type'] == 'SG'){
+									
 								} else {
-									$oz_a2sag++;
-									$a2sag++;
+									if($pass['order'] == 'A'){
+										$saga++
+									}
 								}
-							}
-							break;
-						case 'SC':
-							if($pass['type'] == 'SG'){
-								if($pass['order'] == 'A'){
-									$sc_sg++;
-									$sg++;
+								break;
+							case 'OZ':
+								if($pass['type'] == 'SG'){
+									
 								} else {
-									$a2sg++;
+									if($pass['order'] == 'A'){
+										$saga++;
+									}
 								}
-							} else {
-								if($pass['order'] == 'A'){
-									$sc_sag++;
-									$sag++;
+								break;
+							case 'SC':
+								if($pass['type'] == 'SG'){
+									
 								} else {
-									$a2sag++;
+									if($pass['order'] == 'A'){
+										$saga++;
+									}
 								}
-							}
-							break;
+								break;
+						}
 					}
+					
 				}
 			}
 		}
@@ -263,6 +316,7 @@ class MathShell extends AppShell{
 			$oz_sage = number_format(($oz_sag/$oz_sg) * 100,2);
 			$sc_sage = number_format(($sc_sag/$sc_sg) * 100,2);
 			$sage = number_format(($sag/$sg) * 100,2);
+			$sagf_p = number_format(($sagf/($sagf + $saga)) * 100,2);
 		}
 		
 		$stats = array(
@@ -300,15 +354,16 @@ class MathShell extends AppShell{
 			'dnz_sage' => $dnz_sage,
 			'oz_sage' => $oz_sage,
 			'sc_sage' => $sc_sage,
-			'sage' => $sage
+			'sage' => $sage,
+			'sagf' => $sagf,
+			'saga' => $saga,
+			'sagf_p' => $sagf_p
 		);
 		$this->TeamGameStat->create();
 		$this->TeamGameStat->save($stats);
 	}
 	
 	public function getTeamAggregateBySituation($team_id,$situation,$close){
-		header('Content-Type: text/html');
-		set_time_limit(0);
 		$team = $this->Team->find('first',array('conditions' => array('Team.id' => $team_id),'recursive' => 2));
 		$stat = $this->TeamStat->find('first',array('conditions' => array('TeamStat.team_id' => $team_id,'TeamStat.situation' => $situation,'TeamStat.close' => $close)));
 		$cf = 0;
@@ -330,6 +385,9 @@ class MathShell extends AppShell{
 		$oz_sg = 0;
 		$sc_sg = 0;
 		$sg = 0;
+		$sagf = 0;
+		$saga = 0;
+		$sagf_p = 0;
 		
 		$player_ids = array();
 		foreach($team['Player'] as $player){
@@ -369,62 +427,96 @@ class MathShell extends AppShell{
 				foreach($player['Pass'] as $pass){
 					$shot = $this->Shot->find('first',array('conditions' => array('Shot.id' => $pass['shot_id'])));
 					if($close == 0 || $this->isClose($shot['game_id'],$shot['time'])){
-						switch($pass['location']){
-							case 'D/NZ':
-								if($pass['type'] == 'SG'){
-									if($pass['order'] == 'A'){
-										$dnz_sg++;
-										$sg++;
+						if($player['team_id'] == $team_id){
+							switch($pass['location']){
+								case 'D/NZ':
+									if($pass['type'] == 'SG'){
+										if($pass['order'] == 'A'){
+											$dnz_sg++;
+											$sg++;
+										} else {
+											$dnz_a2sg++;
+											$a2sg++;
+										}
 									} else {
-										$dnz_a2sg++;
-										$a2sg++;
+										if($pass['order'] == 'A'){
+											$dnz_sag++;
+											$sag++;
+											$sagf++;
+										} else {
+											$dnz_a2sag++;
+											$a2sag++;
+										}
 									}
-								} else {
-									if($pass['order'] == 'A'){
-										$dnz_sag++;
-										$sag++;
+									break;
+								case 'OZ':
+									if($pass['type'] == 'SG'){
+										if($pass['order'] == 'A'){
+											$oz_sg++;
+											$sg++;
+										} else {
+											$oz_a2sg++;
+											$a2sg++;
+										}
 									} else {
-										$dnz_a2sag++;
-										$a2sag++;
+										if($pass['order'] == 'A'){
+											$oz_sag++;
+											$sag++;
+											$sagf++;
+										} else {
+											$oz_a2sag++;
+											$a2sag++;
+										}
 									}
-								}
-								break;
-							case 'OZ':
-								if($pass['type'] == 'SG'){
-									if($pass['order'] == 'A'){
-										$oz_sg++;
-										$sg++;
+									break;
+								case 'SC':
+									if($pass['type'] == 'SG'){
+										if($pass['order'] == 'A'){
+											$sc_sg++;
+											$sg++;
+										} else {
+											$a2sg++;
+										}
 									} else {
-										$oz_a2sg++;
-										$a2sg++;
+										if($pass['order'] == 'A'){
+											$sc_sag++;
+											$sag++;
+											$sagf++;
+										} else {
+											$a2sag++;
+										}
 									}
-								} else {
-									if($pass['order'] == 'A'){
-										$oz_sag++;
-										$sag++;
+									break;
+							}
+						} else {
+							switch($pass['location']){
+								case 'D/NZ':
+									if($pass['type'] == 'SG'){
 									} else {
-										$oz_a2sag++;
-										$a2sag++;
+										if($pass['order'] == 'A'){
+											$saga++;
+										}
 									}
-								}
-								break;
-							case 'SC':
-								if($pass['type'] == 'SG'){
-									if($pass['order'] == 'A'){
-										$sc_sg++;
-										$sg++;
+									break;
+								case 'OZ':
+									if($pass['type'] == 'SG'){
+										
 									} else {
-										$a2sg++;
+										if($pass['order'] == 'A'){
+											$saga++;
+										}
 									}
-								} else {
-									if($pass['order'] == 'A'){
-										$sc_sag++;
-										$sag++;
+									break;
+								case 'SC':
+									if($pass['type'] == 'SG'){
+										
 									} else {
-										$a2sag++;
+										if($pass['order'] == 'A'){
+											$saga++;
+										}
 									}
-								}
-								break;
+									break;
+							}
 						}
 					}
 				}
@@ -497,6 +589,7 @@ class MathShell extends AppShell{
 			$oz_sage = number_format(($oz_sag/$oz_sg) * 100,2);
 			$sc_sage = number_format(($sc_sag/$sc_sg) * 100,2);
 			$sage = number_format(($sag/$sg) * 100,2);
+			$sagf_p = number_format(($sagf/($sagf + $saga)) * 100,2);
 		}
 		
 		$this->TeamStat->read(null,$stat['TeamStat']['id']);
@@ -531,15 +624,16 @@ class MathShell extends AppShell{
 				'dnz_sage' => $dnz_sage,
 				'oz_sage' => $oz_sage,
 				'sc_sage' => $sc_sage,
-				'sage' => $sage
+				'sage' => $sage,
+				'sagf' => $sagf,
+				'saga' => $saga,
+				'sagf_p' => $sagf_p
 			);
 		$this->TeamStat->set($stats);
 		$this->TeamStat->save();
 	}
 	
 	public function getPlayerAggregateBySituation($player_id,$situation,$close){
-		header('Content-Type: text/html');
-		set_time_limit(0);
 		$player = $this->Player->find('first',array('conditions' => array('Player.id' => $player_id),'recursive' => -1));
 		$team = $this->Team->find('first',array('conditions' => array('Team.id' => $player['Player']['team_id']),'recursive' => 2));
 		$stat = $this->PlayerStat->find('first',array('conditions' => array('PlayerStat.player_id' => $player_id,'PlayerStat.situation' => $situation,'PlayerStat.close' => $close)));
@@ -547,6 +641,9 @@ class MathShell extends AppShell{
 		$ff = 0;
 		$gf = 0;
 		$sf = 0;
+		$shots = 0;
+		$icorsi = 0;
+		$toi = 0;
 		
 		$dnz_a2sag = 0;
 		$oz_a2sag = 0;
@@ -562,10 +659,29 @@ class MathShell extends AppShell{
 		$oz_sg = 0;
 		$sc_sg = 0;
 		$sg = 0;
+		$sagf = 0;
+		$saga = 0;
+		$sagf_p = 0;
+		
+		foreach($player['Shift'] as $shift){
+			if($this->getSituation($shift['game_id'],$shift['time_start']) == $situation || $situation == 'All'){
+				if($close == 0 || $this->isClose($shift['game_id'],$shift['time_start'])){
+					$toi += $shift['time_end'] - $shift['time_start'];
+				}
+			}
+		}
+		
+		$toi = $toi / count($player['Game']);
 		
 		$player_ids = array();
 		foreach($team['Player'] as $player){
 			foreach($player['Shot'] as $shot){
+				if($player['id'] == $player_id){
+					$icorsi++;
+					if($shot['type'] == 'On Goal'){
+						$shots++;
+					}
+				}
 				if($this->onIce($player_id,$shot['game_id'],$shot['time'])){
 					if($close == 0 || $this->isClose($shot['game_id'],$shot['time'])){
 						if($situation == 'All'){
@@ -620,6 +736,7 @@ class MathShell extends AppShell{
 										if($pass['order'] == 'A'){
 											$dnz_sag++;
 											$sag++;
+											$sagf++;
 										} else {
 											$dnz_a2sag++;
 											$a2sag++;
@@ -639,6 +756,7 @@ class MathShell extends AppShell{
 										if($pass['order'] == 'A'){
 											$oz_sag++;
 											$sag++;
+											$sagf++;
 										} else {
 											$oz_a2sag++;
 											$a2sag++;
@@ -657,11 +775,21 @@ class MathShell extends AppShell{
 										if($pass['order'] == 'A'){
 											$sc_sag++;
 											$sag++;
+											$sagf++;
 										} else {
 											$a2sag++;
 										}
 									}
 									break;
+							}
+						}
+					}
+				}
+				foreach($player['Game'] as $game){
+					foreach($game['Pass'] as $pass){
+						if($pass['player_id'] != $player_id && $this->onIce($player_id,$game['id'],$pass['Shot']['time'])){
+							if($pass['type'] == 'SG' && $pass['order'] == 'A'){
+								$saga++;
 							}
 						}
 					}
@@ -739,6 +867,7 @@ class MathShell extends AppShell{
 			$oz_sage = number_format(($oz_sag/$oz_sg) * 100,2);
 			$sc_sage = number_format(($sc_sag/$sc_sg) * 100,2);
 			$sage = number_format(($sag/$sg) * 100,2);
+			$sagf_p = number_format(($sagf/($sagf + $saga)) * 100,2);
 		}
 		
 		$this->PlayerStat->read(null,$stat['PlayerStat']['id']);
@@ -773,7 +902,13 @@ class MathShell extends AppShell{
 				'dnz_sage' => $dnz_sage,
 				'oz_sage' => $oz_sage,
 				'sc_sage' => $sc_sage,
-				'sage' => $sage
+				'sage' => $sage,
+				'shots' => $shots,
+				'icorsi' => $icorsi,
+				'toi' => $toi,
+				'sagf' => $sagf,
+				'saga' => $saga,
+				'sagf_p' => $sagf_p
 			);
 		$this->PlayerStat->set($stats);
 		$this->PlayerStat->save();
@@ -794,6 +929,10 @@ class MathShell extends AppShell{
 		$ga = 0;
 		$sa = 0;
 		
+		$icorsi = 0;
+		$shots = 0;
+		$toi = 0;
+		
 		$dnz_a2sag = 0;
 		$oz_a2sag = 0;
 		$a2sag = 0;
@@ -808,8 +947,27 @@ class MathShell extends AppShell{
 		$oz_sg = 0;
 		$sc_sg = 0;
 		$sg = 0;
+		$sagf = 0;
+		$saga = 0;
+		$sagf_p = 0;
+		
+		foreach($game['Shift'] as $shift){
+			if($shift['player_id'] == $player_id){
+				if($this->getSituation($shift['game_id'],$shift['time_start']) == $situation || $situation == 'All'){
+					if($close == 0 || $this->isClose($shift['game_id'],$shift['time_start'])){
+						$toi += $shift['time_end'] - $shift['time_start'];
+					}
+				}
+			}
+		}
 		
 		foreach($game['Shot'] as $shot){
+			if($shot['player_id'] == $player_id){
+				$icorsi++;
+				if($shot['type'] == 'On Goal'){
+					$shots++;
+				}
+			}
 			if($this->onIce($player_id,$game_id,$shot['time'])){
 				if($close == 0 || $this->isClose($shot['game_id'],$shot['time'])){
 					if($shot['Player']['team_id'] == $team_id){
@@ -883,6 +1041,7 @@ class MathShell extends AppShell{
 									if($pass['order'] == 'A'){
 										$dnz_sag++;
 										$sag++;
+										$sagf++;
 									} else {
 										$dnz_a2sag++;
 										$a2sag++;
@@ -902,6 +1061,7 @@ class MathShell extends AppShell{
 									if($pass['order'] == 'A'){
 										$oz_sag++;
 										$sag++;
+										$saga++;
 									} else {
 										$oz_a2sag++;
 										$a2sag++;
@@ -920,11 +1080,20 @@ class MathShell extends AppShell{
 									if($pass['order'] == 'A'){
 										$sc_sag++;
 										$sag++;
+										$saga++;
 									} else {
 										$a2sag++;
 									}
 								}
 								break;
+						}
+					}
+				} else {
+					if($close == 0 || $this->isClose($pass['Shot']['game_id'],$pass['Shot']['time'])){
+						if($this->onIce($player_id,$game['id'],$pass['Shot']['time'])){
+							if($pass['type'] == 'SG' && $pass['order'] == 'A'){
+								$saga++;
+							}
 						}
 					}
 				}
@@ -951,6 +1120,7 @@ class MathShell extends AppShell{
 			$oz_sage = number_format(($oz_sag/$oz_sg) * 100,2);
 			$sc_sage = number_format(($sc_sag/$sc_sg) * 100,2);
 			$sage = number_format(($sag/$sg) * 100,2);
+			$sagf_p = number_format(($sagf/($sagf + $saga)) * 100,2);
 		}
 		
 		$stats = array(
@@ -988,7 +1158,13 @@ class MathShell extends AppShell{
 			'dnz_sage' => $dnz_sage,
 			'oz_sage' => $oz_sage,
 			'sc_sage' => $sc_sage,
-			'sage' => $sage
+			'sage' => $sage,
+			'icorsi' => $icorsi,
+			'shots' => $shots,
+			'toi' => $toi,
+			'sagf' => $sagf,
+			'saga' => $saga,
+			'sagf_p' => $sagf_p
 		);
 		$this->PlayerGameStat->create();
 		$this->PlayerGameStat->save($stats);
@@ -1007,6 +1183,18 @@ class MathShell extends AppShell{
 			foreach($game['Player'] as $player){
 				for($i=0;$i<2;$i++){
 					$this->getPlayerGameBySituation($game_id,$player['id'],$situation,$i);
+				}
+			}
+		}
+	}
+	
+	public function getSeasonStats(){
+		$situations = array('All','5v5','5v4','4v4','5v3','4v3','3v3');
+		$teams = $this->Team->find('all');
+		foreach($situations as $situation){
+			foreach($teams as $team){
+				for($i=0;$i<2;$i++){
+					$this->getTeamAggregateBySituation($team['Team']['id'],$situation,$i);
 				}
 			}
 		}

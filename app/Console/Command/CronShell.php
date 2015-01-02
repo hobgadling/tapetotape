@@ -1,4 +1,5 @@
 <?php
+	error_reporting(E_ALL);
 class CronShell extends AppShell{
 	public $uses = array('Season','Game','Team','Player','Shift','Shot','Faceoff','Goal','Block','Shot','Assist');
 	
@@ -69,7 +70,7 @@ foreach($games as $game){
 	public function getGameData(){
 		$season_id = '20142015';
 		$nhl_game_id = $this->args[0];
-		//$this->getFiles($season_id,$nhl_game_id);
+		$this->getFiles($season_id,$nhl_game_id);
 		$this->getRosterData($season_id,$nhl_game_id);
 		$this->getTOIData($season_id,$nhl_game_id);
 		$this->getPBPData($season_id,$nhl_game_id);
@@ -111,6 +112,7 @@ foreach($games as $game){
 			$this->Season->save();
 			$season = $this->Season->read(null,$this->Season->id);
 		}
+		echo 'webroot/game_sheets/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM';
 		$roster_html = file_get_html('webroot/game_sheets/RO02' . str_pad($nhl_game_id,4,0,STR_PAD_LEFT) . '.HTM');
 		$game = $this->Game->find('first',array('conditions' => array(
 			'season_id' => $season['Season']['id'],
@@ -157,16 +159,21 @@ foreach($games as $game){
 						$this->Player->saveAssociated($player);
 						//$this->Team->saveAssociated($game);
 					} else {
+						$game_ids = array();
+						foreach($player['Game'] as $g){
+							$game_ids[] = $g['id'];
+						}
+						$game_ids[] = $game['Game']['id'];
 						$player = array(
-							'Team' => array('id' => $data['Team'][$team_index]['id']),
-							'Game' => array('id' => $game['Game']['id']),
+							'Game' => $game_ids,
 							'Player' => array('id' => $player['Player']['id'])
 						);
+						print_r($player);
 						$game = array(
 							'Team' => array('id' => $data['Team'][$team_index]['id']),
 							'Game' => array('id' => $game['Game']['id'])
 						);
-						$this->Player->saveAssociated($player);
+						$this->Player->save($player);
 						//$this->Team->saveAssociated($game);
 					}
 				}
