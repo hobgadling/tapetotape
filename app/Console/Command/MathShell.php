@@ -1,6 +1,6 @@
 <?php
 class MathShell extends AppShell{
-	public $uses = array('Season','Game','Team','Player','Shift','Shot','Faceoff','Goal','Block','Shot','Assist','TeamStat','TeamGameStat','PlayerStat','PlayerGameStat');
+	public $uses = array('Season','Game','Team','Player','Shift','Shot','Faceoff','Goal','Block','Shot','Assist','TeamStat','TeamGameStat','PlayerStat','PlayerGameStat','GameScore');
 	
 	public function createTeamRecords(){
 		$teams = $this->Team->find('all');
@@ -66,25 +66,48 @@ class MathShell extends AppShell{
 		}
 	}
 	
-	public function isClose($game_id,$time){
+	public function createSingleGameScores(){
+		$game_id = $this->args[0];
 		$game = $this->Game->find('first',array('conditions' => array('Game.id' => $game_id)));
+		$close_array = array();
+		$close_array[0] = 1;
 		$score = array();
 		foreach($game['Team'] as $team){
 			$score[$team['id']] = 0;
 		}
 		foreach($game['Goal'] as $goal){
-			if($goal['time'] <= $time){
-				$player = $this->Player->find('first',array('conditions' => array('Player.id' => $goal['player_id'])));
-				$score[$player['Player']['team_id']]++;
+			$player = $this->Player->find('first',array('conditions' => array('Player.id' => $goal['player_id'])));
+			$shot = $this->Shot->find('first',array('conditions' => array('Shot.id' => $goal['shot_id'])));
+			$score[$player['Player']['team_id']]++;
+			list($score1) = array_slice($score, 0, 1);
+			list($score2) = array_slice($score, 1, 1);
+			$diff = abs($score1-$score2);
+			if($shot['Shot']['time'] < 40*60 && $diff < 2){
+				$close_array[$shot['Shot']['time']] = 1;
+			} else if($diff == 0){
+				$close_array[$shot['Shot']['time']] = 1;
+			} else {
+				$close_array[$shot['Shot']['time']] = 0;
 			}
 		}
-		list($score1) = array_slice($score, 0, 1);
-		list($score2) = array_slice($score, 1, 1);
-		$diff = abs($score1-$score2);
-		if($time < 40*60){
-			return $diff < 2;
+		for($i=0;$i<=60*60;$i++){
+			if(!isset($close_array[$i])){
+				$close_array[$i] = $close_array[$i-1];
+			}
+			$this->GameScore->create();
+			$close_score = array(
+				'GameScore' => array('game_id' => $game['Game']['id'],'close' => $close_array[$i],'time' => $i)
+			);
+			$this->GameScore->save($close_score);
+		}
+	}
+	
+	public function isClose($game_id,$time){
+		if($time > 60*60){
+			return true;
 		} else {
-			return $diff == 0;
+			$gamescore = $this->GameScore->find('first',array('conditions' => array('GameScore.game_id' => $game_id,'GameScore.time' => $time),'recursive' => -1));
+			return $gamescore['GameScore']['close'] == 1;
 		}
 	}
 	
@@ -267,7 +290,7 @@ class MathShell extends AppShell{
 									
 								} else {
 									if($pass['order'] == 'A'){
-										$saga++
+										$saga++;
 									}
 								}
 								break;
@@ -363,9 +386,18 @@ class MathShell extends AppShell{
 		$this->TeamGameStat->save($stats);
 	}
 	
-	public function getTeamAggregateBySituation($team_id,$situation,$close){
+	public function getTeamAggregateBySituation($team_id = 0,$situation = 0,$close = -1){
+		if($team_id == 0){
+			$team_id = $this->args[0];
+		}
+		if($situation == 0){
+			$situation = $this->args[1];
+		}
+		if($close = -1){
+			$close = $this->args[2];
+		}
 		$team = $this->Team->find('first',array('conditions' => array('Team.id' => $team_id),'recursive' => 2));
-		$stat = $this->TeamStat->find('first',array('conditions' => array('TeamStat.team_id' => $team_id,'TeamStat.situation' => $situation,'TeamStat.close' => $close)));
+		$stat = $this->TeamStat->find('first',array('conditions' => array('TeamStat.team_id' => $team_id,'TeamStat.situation' => $situation,'TeamStat.close' => $close),'recursive' => -1));
 		$cf = 0;
 		$ff = 0;
 		$gf = 0;
@@ -1219,6 +1251,14 @@ class MathShell extends AppShell{
 				$this->getPlayerGameBySituation($game_id,$player['id'],$situation,$i);
 			}
 		}
+	}
+	
+	public function getWOWYByGame($player_id,$game_id){
+		
+	}
+	
+	public function getWOWY($player_id){
+		
 	}
 }	
 ?>
