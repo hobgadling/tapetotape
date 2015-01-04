@@ -135,7 +135,19 @@ class MathShell extends AppShell{
 		return !!$shift;
 	}
 	
-	public function getTeamGameBySituation($game_id,$team_id,$situation,$close){
+	public function getTeamGameBySituation($game_id = 0,$team_id = 0,$situation = 0,$close = -1){
+		if($game_id == 0){
+			$game_id = $this->args[0];
+		}
+		if($team_id == 0){
+			$team_id = $this->args[1];
+		}
+		if($situation == 0){
+			$situation = $this->args[2];
+		}
+		if($close = -1){
+			$close = $this->args[3];
+		}
 		$game = $this->Game->find('first',array('conditions' => array('Game.id' => $game_id),'recursive' => 2));
 		
 		$cf = 0;
@@ -665,7 +677,16 @@ class MathShell extends AppShell{
 		$this->TeamStat->save();
 	}
 	
-	public function getPlayerAggregateBySituation($player_id,$situation,$close){
+	public function getPlayerAggregateBySituation($player_id = 0,$situation = 0,$close = -1){
+		if($player_id == 0){
+			$player_id = $this->args[0];
+		}
+		if($situation == 0){
+			$situation = $this->args[1];
+		}
+		if($close = -1){
+			$close = $this->args[2];
+		}
 		$player = $this->Player->find('first',array('conditions' => array('Player.id' => $player_id),'recursive' => -1));
 		$team = $this->Team->find('first',array('conditions' => array('Team.id' => $player['Player']['team_id']),'recursive' => 2));
 		$stat = $this->PlayerStat->find('first',array('conditions' => array('PlayerStat.player_id' => $player_id,'PlayerStat.situation' => $situation,'PlayerStat.close' => $close)));
@@ -946,7 +967,19 @@ class MathShell extends AppShell{
 		$this->PlayerStat->save();
 	}
 	
-	public function getPlayerGameBySituation($game_id,$player_id,$situation,$close){
+	public function getPlayerGameBySituation($game_id = 0,$player_id = 0,$situation = 0,$close = 0){
+		if($game_id == 0){
+			$game_id = $this->args[0];
+		}
+		if($player_id == 0){
+			$player_id = $this->args[1];
+		}
+		if($situation == 0){
+			$situation = $this->args[2];
+		}
+		if($close = -1){
+			$close = $this->args[3];
+		}
 		$game = $this->Game->find('first',array('conditions' => array('Game.id' => $game_id),'recursive' => 2));
 		$player = $this->Player->find('first',array('conditions' => array('Player.id' => $player_id),'recursive' => -1));
 		$team_id = $player['Player']['team_id'];
