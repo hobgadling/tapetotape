@@ -8,9 +8,9 @@ Situation:
 		<span class="caret"></span>
 	</button>
 	<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/team/detail/<?php echo $team['Team']['short_name']?>/All">All</a>
-		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/team/detail/<?php echo $team['Team']['short_name']?>/5v5">5v5</a>
-		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/team/detail/<?php echo $team['Team']['short_name']?>/5v4">5v4</a>
+		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/player/detail/<?php echo $player['Player']['id']?>/All">All</a>
+		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/player/detail/<?php echo $player['Player']['id']?>/5v5">5v5</a>
+		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/player/detail/<?php echo $player['Player']['id']?>/5v4">5v4</a>
 	</ul>
 </div>
 
@@ -25,6 +25,9 @@ Score Close: <input type="checkbox" id="sc"<?php if($close == '1'){?>checked="ch
 		<th>FF</th>
 		<th>FA</th>
 		<th>FF%</th>
+		<th>GF</th>
+		<th>GA</th>
+		<th>GF%</th>
 		<th>D/NZ A2SAG</th>
 		<th>OZ A2SAG</th>
 		<th>A2SAG</th>
@@ -47,7 +50,7 @@ Score Close: <input type="checkbox" id="sc"<?php if($close == '1'){?>checked="ch
 	</tr>
 	</thead>
 	<tbody>
-		<?php foreach($team['TeamStat'] as $stat){?>
+		<?php foreach($player['PlayerStat'] as $stat){?>
 			<?php if($stat['situation'] == $situation && $stat['close'] == $close){?>
 				<tr>
 					<td><?php echo $stat['cf']?></td>
@@ -56,7 +59,6 @@ Score Close: <input type="checkbox" id="sc"<?php if($close == '1'){?>checked="ch
 					<td><?php echo $stat['ff']?></td>
 					<td><?php echo $stat['fa']?></td>
 					<td><?php echo $stat['ff_p']?></td>
-					<td><?php echo $stat['pdo']?></td>
 					<td><?php echo $stat['gf']?></td>
 					<td><?php echo $stat['ga']?></td>
 					<td><?php echo $stat['gf_p']?></td>

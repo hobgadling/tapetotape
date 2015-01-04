@@ -84,7 +84,6 @@ Situation:
 		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/game/detail/<?php echo $game['Game']['id']?>/All">All</a>
 		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/game/detail/<?php echo $game['Game']['id']?>/5v5">5v5</a>
 		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/game/detail/<?php echo $game['Game']['id']?>/5v4">5v4</a>
-		<li role="presentation"><a role="menuitem" class="situation" tabindex="-1" href="/game/detail/<?php echo $game['Game']['id']?>/4v4">4v4</a>
 	</ul>
 </div>
 
