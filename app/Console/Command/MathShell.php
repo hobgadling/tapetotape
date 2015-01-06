@@ -1422,6 +1422,7 @@ class MathShell extends AppShell{
 		$game_id = $this->args[0];
 		$game = $this->Game->find('first',array('conditions' => array('Game.id' => $game_id)));
 		foreach($game['Shot'] as $shot){
+			$this->TeamGameStat->clear();
 			$shot_player = $this->Player->find('first',array('conditions' => array('Player.id' => $shot['player_id']),'recursive' => -1));
 			$shot_team_id = $shot_player['Player']['team_id'];
 			if($shot['type'] == 'Blocked'){
@@ -1436,8 +1437,11 @@ class MathShell extends AppShell{
 			}
 			
 			foreach($game['Team'] as $team){
+				$data = array();
 				$situation = $this->getTeamSituation($game_id,$shot['time'],$team['id']);
-				$team_game_stat = $this->PlayerGameStat->find('first',array('conditions' => array('TeamGameStat.player_id' => $team['id'],'TeamGameStat.game_id' => $game_id,'TeamGameStat.situation' => $situation,'TeamGameStat.close' => $close),'recursive' => -1));
+				$this->TeamGameStat->clear();
+				$team_game_stat = $this->TeamGameStat->find('first',array('conditions' => array('TeamGameStat.team_id' => $team['id'],'TeamGameStat.game_id' => $game_id,'TeamGameStat.situation' => $situation,'TeamGameStat.close' => $close),'recursive' => -1));
+				
 				if(!$team_game_stat){
 					$this->TeamGameStat->create();
 					$data = array(
@@ -1463,9 +1467,10 @@ class MathShell extends AppShell{
 							$data['ga'] = 1;
 						}
 					}
-					$this->TeamGameStat->set($data);
+					//$this->TeamGameStat->set($data);
 				} else {
 					$this->TeamGameStat->read(null,$team_game_stat['TeamGameStat']['id']);
+					$data['id'] = $team_game_stat['TeamGameStat']['id'];
 					if($team['id'] == $shot_team_id){
 						$data['cf'] = $team_game_stat['TeamGameStat']['cf']+1;
 						if($kind == 'f'){
@@ -1483,9 +1488,9 @@ class MathShell extends AppShell{
 							$data['ga'] = $team_game_stat['TeamGameStat']['ga'] + 1;
 						}
 					}
-					$this->TeamGameStat->set($data);
+					//$this->TeamGameStat->set($data);
 				}
-				$this->TeamGameStat->save();
+				$this->TeamGameStat->save($data);
 			}
 		}
 	}
@@ -1572,7 +1577,7 @@ class MathShell extends AppShell{
 								'situation' => $situation,
 								'close' => $close
 							);
-							if($p['team_id'] == $pass_player['team_id']){
+							if($p['Player']['team_id'] == $pass_player['Player']['team_id']){
 								$data['sagf'] = 1;
 							} else {
 								$data['saga'] = 1;
@@ -1582,7 +1587,7 @@ class MathShell extends AppShell{
 							$this->PlayerGameStat->save();
 						} else {
 							$this->PlayerGameStat->read(null,$stat['PlayerGameStat']['id']);
-							if($p['team_id'] == $pass_player['team_id']){
+							if($p['Player']['team_id'] == $pass_player['Player']['team_id']){
 								$this->PlayerGameStat->set('sagf',$stat['PlayerGameStat']['sagf']+1);
 							} else {
 								$this->PlayerGameStat->set('saga',$stat['PlayerGameStat']['saga']+1);
@@ -1753,9 +1758,9 @@ class MathShell extends AppShell{
 			
 			if($pass['order'] == 'A' && $pass['type'] == 'SAG'){
 				foreach($game['Team'] as $team){
-					
+					$data = array();
 					$stat = $this->TeamGameStat->find('first',array('conditions' => array(
-						'TeamGameStat.player_id' => $team['id'],
+						'TeamGameStat.team_id' => $team['id'],
 						'TeamGameStat.game_id' => $game_id,
 						'TeamGameStat.situation' => $situation,
 						'TeamGameStat.close' => $close
@@ -1768,7 +1773,7 @@ class MathShell extends AppShell{
 							'situation' => $situation,
 							'close' => $close
 						);
-						if($team['id'] != $pass_player['team_id']){
+						if($team['id'] != $pass_player['Player']['team_id']){
 							$data['saga'] = 1;
 						} else {
 							$data['sagf'] = 1;
@@ -1778,7 +1783,7 @@ class MathShell extends AppShell{
 						$this->TeamGameStat->save();
 					} else {
 						$this->TeamGameStat->read(null,$stat['TeamGameStat']['id']);
-						if($team['id'] != $pass_player['team_id']){
+						if($team['id'] != $pass_player['Player']['team_id']){
 							$this->TeamGameStat->set('saga',$stat['TeamGameStat']['sagf']+1);
 						} else {
 							$this->TeamGameStat->set('sagf',$stat['TeamGameStat']['saga']+1);
@@ -1787,9 +1792,9 @@ class MathShell extends AppShell{
 					}
 				}
 			}
-			
+			$data = array();
 			$stat = $this->TeamGameStat->find('first',array('conditions' => array(
-				'TeamGameStat.team_id' => $pass_player['team_id'],
+				'TeamGameStat.team_id' => $pass_player['Player']['team_id'],
 				'TeamGameStat.game_id' => $game_id,
 				'TeamGameStat.situation' => $situation,
 				'TeamGameStat.close' => $close
@@ -1797,7 +1802,7 @@ class MathShell extends AppShell{
 			
 			if(!$stat){
 				$data = array(
-					'team_id' => $pass_player['team_id'],
+					'team_id' => $pass_player['Player']['team_id'],
 					'game_id' => $game_id,
 					'situation' => $situation,
 					'close' => $close
@@ -2048,7 +2053,6 @@ class MathShell extends AppShell{
 				'game_id' => $game_id,
 				'situation' => 'All',
 				'close' => 1,
-				'toi' => 0,
 				'ca' => 0,
 				'cf' => 0,
 				'fa' => 0,
@@ -2069,18 +2073,14 @@ class MathShell extends AppShell{
 				'oz_sg' => 0,
 				'sc_sg' => 0,
 				'sg' => 0,
-				'shots' => 0,
-				'icorsi' => 0,
-				'toi' => 0,
 				'sagf' => 0,
 				'saga' => 0
 			);
 			$all_data = array(
-				'player_id' => $team['id'],
+				'team_id' => $team['id'],
 				'game_id' => $game_id,
 				'situation' => 'All',
 				'close' => 0,
-				'toi' => 0,
 				'ca' => 0,
 				'cf' => 0,
 				'fa' => 0,
@@ -2101,9 +2101,6 @@ class MathShell extends AppShell{
 				'oz_sg' => 0,
 				'sc_sg' => 0,
 				'sg' => 0,
-				'shots' => 0,
-				'icorsi' => 0,
-				'toi' => 0,
 				'sagf' => 0,
 				'saga' => 0
 			);
@@ -2119,7 +2116,7 @@ class MathShell extends AppShell{
 			}
 			
 			$stat = $this->TeamGameStat->find('first',array('conditions' => array(
-				'player_id' => $team['id'],
+				'team_id' => $team['id'],
 				'game_id' => $game_id,
 				'situation' => 'All',
 				'close' => 1
@@ -2133,7 +2130,7 @@ class MathShell extends AppShell{
 			$this->TeamGameStat->save();
 			
 			$stat = $this->TeamGameStat->find('first',array('conditions' => array(
-				'player_id' => $team['id'],
+				'team_id' => $team['id'],
 				'game_id' => $game_id,
 				'situation' => 'All',
 				'close' => 0
@@ -2159,7 +2156,7 @@ class MathShell extends AppShell{
 			$ff_p *= 100;
 			$gf_p = $stat['PlayerGameStat']['gf'] / ($stat['PlayerGameStat']['gf'] + $stat['PlayerGameStat']['ga']);
 			$gf_p *= 100;
-			$a2_sage = $stat['PlayerGameStat']['a2_sag'] / ($stat['PlayerGameStat']['a2_sag'] + $stat['PlayerGameStat']['a2_sg']);
+			$a2_sage = $stat['PlayerGameStat']['a2sag'] / ($stat['PlayerGameStat']['a2sag'] + $stat['PlayerGameStat']['a2sg']);
 			$a2_sage *= 100;
 			$dnz_sage = $stat['PlayerGameStat']['dnz_sag'] / ($stat['PlayerGameStat']['dnz_sag'] + $stat['PlayerGameStat']['dnz_sg']);
 			$dnz_sage *= 100;
@@ -2230,59 +2227,73 @@ class MathShell extends AppShell{
 	
 	public function createPlayerAggregateStats(){
 		$player_id = $this->args[0];
-		$stats = $this->PlayerGameStat->find('all',array('conditions' => array('PlayerGameStat.player_id' => $player_id),'recursive' => -1));
+		$stats = $this->PlayerGameStat->find('all',array('conditions' => array('PlayerGameStat.player_id' => $player_id,'NOT' => array('PlayerGameStat.situation' => '')),'recursive' => -1));
 		
 		foreach($stats as $stat){
-			$agg_stat = $this->PlayerStat->find('first',array('conditions' => array(
-				'PlayerStat.player_id' => $player_id,
-				'PlayerStat.situation' => $stat['PlayerGameStat']['situation'],
-				'PlayerStat.close' => $stat['PlayerGameStat']['close']
-			),'recursive' => -1));
-			
-			$data = array(
-				'ca' => 0,
-				'cf' => 0,
-				'fa' => 0,
-				'ff' => 0,
-				'ga' => 0,
-				'gf' => 0,
-				'dnz_a2sag' => 0,
-				'oz_a2sag' => 0,
-				'a2sag' => 0,
-				'dnz_a2sg' => 0,
-				'oz_a2sg' => 0,
-				'a2sg' => 0,
-				'dnz_sag' => 0,
-				'oz_sag' => 0,
-				'sc_sag' => 0,
-				'sag' => 0,
-				'dnz_sg' => 0,
-				'oz_sg' => 0,
-				'sc_sg' => 0,
-				'sg' => 0,
-				'shots' => 0,
-				'icorsi' => 0,
-				'toi' => 0,
-				'sagf' => 0,
-				'saga' => 0
-			);
-			if(!$agg_stat){
-				$this->PlayerStat->create();
-				$data['player_id'] = $player_id;
-				$data['situation'] = $stat['PlayerGameStat']['situation'];
-				$data['close'] = $stat['PlayerGameStat']['close'];
-			} else {
-				$this->PlayerStat->read(null,$agg_stat['PlayerStat']['id']);
-				foreach($data as $id=>$r){
-					$data[$id] = $agg_stat['PlayerStat'][$id];
+			if($stat['PlayerGameStat']['situation'] != null){
+				
+				$this->PlayerStat->clear();
+				$agg_stat = $this->PlayerStat->find('first',array('conditions' => array(
+					'PlayerStat.player_id' => $player_id,
+					'PlayerStat.situation' => $stat['PlayerGameStat']['situation'],
+					'PlayerStat.close' => $stat['PlayerGameStat']['close']
+				),'recursive' => -1));
+				
+				$data = array(
+					'ca' => 0,
+					'cf' => 0,
+					'fa' => 0,
+					'ff' => 0,
+					'ga' => 0,
+					'gf' => 0,
+					'dnz_a2sag' => 0,
+					'oz_a2sag' => 0,
+					'a2sag' => 0,
+					'dnz_a2sg' => 0,
+					'oz_a2sg' => 0,
+					'a2sg' => 0,
+					'dnz_sag' => 0,
+					'oz_sag' => 0,
+					'sc_sag' => 0,
+					'sag' => 0,
+					'dnz_sg' => 0,
+					'oz_sg' => 0,
+					'sc_sg' => 0,
+					'sg' => 0,
+					'shots' => 0,
+					'icorsi' => 0,
+					'toi' => 0,
+					'sagf' => 0,
+					'saga' => 0,
+					'player_id' => $player_id,
+					'situation' => $stat['PlayerGameStat']['situation'],
+					'close' => $stat['PlayerGameStat']['close']
+				);
+				if(!$agg_stat){
+					$this->PlayerStat->create();
+					foreach($data as $id=>$r){
+						if($id != 'player_id' && $id != 'situation' && $id != 'close' && $id != 'id'){
+							$data[$id] += $stat['PlayerGameStat'][$id];
+						}
+					}
+					
+					$this->PlayerStat->save($data);
+				} else {
+					$this->PlayerStat->read(null,$agg_stat['PlayerStat']['id']);
+					foreach($data as $id=>$r){
+						$data[$id] = $agg_stat['PlayerStat'][$id];
+					}
+					$data['id'] = $agg_stat['PlayerStat']['id'];
+					foreach($data as $id=>$r){
+						if($id != 'player_id' && $id != 'situation' && $id != 'close' && $id != 'id'){
+							$data[$id] += $stat['PlayerGameStat'][$id];
+						}
+					}
+					
+					$this->PlayerStat->save($data);
 				}
 			}
 			
-			foreach($data as $id=>$r){
-				$data[$id] += $stat['PlayerGameStat'][$id];
-			}
-			$this->PlayerStat->set($data);
-			$this->PlayerStat->save();
 		}
 	}
 	
@@ -2355,7 +2366,7 @@ class MathShell extends AppShell{
 			$ff_p *= 100;
 			$gf_p = $stat['PlayerStat']['gf'] / ($stat['PlayerStat']['gf'] + $stat['PlayerStat']['ga']);
 			$gf_p *= 100;
-			$a2_sage = $stat['PlayerStat']['a2_sag'] / ($stat['PlayerStat']['a2_sag'] + $stat['PlayerStat']['a2_sg']);
+			$a2_sage = $stat['PlayerStat']['a2sag'] / ($stat['PlayerStat']['a2sag'] + $stat['PlayerStat']['a2sg']);
 			$a2_sage *= 100;
 			$dnz_sage = $stat['PlayerStat']['dnz_sag'] / ($stat['PlayerStat']['dnz_sag'] + $stat['PlayerStat']['dnz_sg']);
 			$dnz_sage *= 100;
